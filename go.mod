@@ -1,4 +1,4 @@
-module github.com/boises-finest-dao/kucoin-profit-tracker
+module github.com/boises-finest-dao/investmentdao-backend
 
 go 1.18
 
