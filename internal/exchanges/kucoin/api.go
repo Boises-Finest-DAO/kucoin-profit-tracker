@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Kucoin/kucoin-go-sdk"
+	"github.com/boises-finest-dao/investmentdao-backend/internal/models"
 )
 
 type KucoinServer struct {
@@ -33,17 +34,19 @@ type KuCoinTradinCurrencyBalance struct {
 
 func ConfigureConnection(key string, secret string, pass string) *KucoinServer {
 	// Setup KuCoin API
-	ks := &KucoinServer{kucoin.NewApiService(
-		// kucoin.ApiBaseURIOption("https://api.kucoin.com"),
-		kucoin.ApiKeyOption(key),
-		kucoin.ApiSecretOption(secret),
-		kucoin.ApiPassPhraseOption(pass),
-		kucoin.ApiKeyVersionOption(kucoin.ApiKeyVersionV2))}
+	ks := &KucoinServer{
+		kucoin.NewApiService(
+			// kucoin.ApiBaseURIOption("https://api.kucoin.com"),
+			kucoin.ApiKeyOption(key),
+			kucoin.ApiSecretOption(secret),
+			kucoin.ApiPassPhraseOption(pass),
+			kucoin.ApiKeyVersionOption(kucoin.ApiKeyVersionV2)),
+	}
 
 	return ks
 }
 
-func (ks *KucoinServer) GetTradingBalances() *KuCoinTradingBalance {
+func (ks *KucoinServer) GetTradingBalances(tradingBalanceID uint) *models.ExchangeBalance {
 	// Without pagination
 	rsp, err := ks.Accounts("", "")
 	if err != nil {
@@ -75,10 +78,14 @@ func (ks *KucoinServer) GetTradingBalances() *KuCoinTradingBalance {
 		return nil
 	}
 
-	tradingBalance := &KuCoinTradingBalance{
-		Timestamp:           time.Now(),
-		TradingBalances:     make(map[string]KuCoinTradinCurrencyBalance),
-		TotalTradingBalance: 0,
+	// tradingBalance := &KuCoinTradingBalance{
+	// 	Timestamp:           time.Now(),
+	// 	TradingBalances:     make(map[string]KuCoinTradinCurrencyBalance),
+	// 	TotalTradingBalance: 0,
+	// }
+
+	tradingBalance := &models.ExchangeBalance{
+		TradingBalanceID: tradingBalanceID,
 	}
 
 	for _, a := range as {
@@ -92,7 +99,7 @@ func (ks *KucoinServer) GetTradingBalances() *KuCoinTradingBalance {
 			totalValue := strconv.FormatFloat(totalAmount, 'f', 8, 64)
 
 			if totalAmount > 0 {
-				tradingBalance.TradingBalances[a.Currency] = KuCoinTradinCurrencyBalance{
+				tradingBalance.ExchangeCurrencyBalances = append(tradingBalance.ExchangeCurrencyBalances, models.ExchangeCurrencyBalance{
 					CurrencyName:    a.Currency,
 					FiatValue:       fiatValue,
 					AmountAvailable: amountAvailable,
@@ -101,14 +108,14 @@ func (ks *KucoinServer) GetTradingBalances() *KuCoinTradingBalance {
 					UsdAmount:       usdAmount,
 					UsdValue:        usdValue,
 					TotalValue:      totalValue,
-				}
+				})
 
-				tradingBalance.TotalTradingBalance += usdAmount
+				tradingBalance.TotalExchangeBalance += usdAmount
 			}
 		}
 	}
 
-	totalCoinsString := strconv.FormatFloat(tradingBalance.TotalTradingBalance, 'f', 2, 64)
+	totalCoinsString := strconv.FormatFloat(tradingBalance.TotalExchangeBalance, 'f', 2, 64)
 	log.Printf("Total Trading Value: $%s", totalCoinsString)
 
 	return tradingBalance

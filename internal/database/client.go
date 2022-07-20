@@ -22,10 +22,12 @@ func Connect(connectionString string) {
 
 func Migrate() {
 	Instance.AutoMigrate(
-		&models.Bots{},
-		&models.Bot_Exchanges{},
-		&models.Exchanges{},
-		&models.Funds{},
+		&models.Fund{},
+		&models.Bot{},
+		&models.Exchange{},
+		&models.TradingBalance{},
+		&models.ExchangeBalance{},
+		&models.ExchangeCurrencyBalance{},
 	)
 	log.Println("Database Migration Completed!")
 }
