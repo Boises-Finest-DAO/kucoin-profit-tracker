@@ -29,6 +29,7 @@ func Migrate() {
 		&models.ExchangeBalance{},
 		&models.ExchangeCurrencyBalance{},
 		&models.Contributions{},
+		&models.User{},
 	)
 	log.Println("Database Migration Completed!")
 }

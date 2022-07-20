@@ -9,4 +9,5 @@ type Fund struct {
 	Description     string           `json:"host"`
 	Bot             Bot              `json:"bots"`
 	TradingBalances []TradingBalance `json:"trading_balances"`
+	Users           []User           `json:"users" gorm:"many2many:user_funds"`
 }

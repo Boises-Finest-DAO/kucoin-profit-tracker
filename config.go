@@ -9,12 +9,8 @@ import (
 type Config struct {
 	GormEngine      string `mapstructure:"GORM_ENGINE"`
 	GormConnection  string `mapstructure:"GORM_CONNECTION"`
-	DBPass          string `mapstructure:"DB_PASS"`
-	DBHost          string `mapstructure:"DB_HOST"`
-	DBPort          string `mapstructure:"DB_PORT"`
-	DBDriver        string `mapstructure:"DB_DRIVER"`
 	AppVersion      string `mapstructure:"APP_VERSION"`
-	ServerAddress   string `mapstructure:"SERVER_ADDRESS"`
+	ServerPort      string `mapstructure:"SERVER_PORT"`
 	KuCoinApiKey    string `mapstructure:"KUCOIN_KEY"`
 	KuCoinApiSecret string `mapstructure:"KUCOIN_SECRET"`
 	KuCoinApiPass   string `mapstructure:"KUCOIN_PASSPHRASE"`
