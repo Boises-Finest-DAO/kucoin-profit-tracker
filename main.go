@@ -70,6 +70,7 @@ func initRouter() *gin.Engine {
 		{
 
 			userFunds.POST("/bot/exchanges/add", controllers.AddExchange)
+			userFunds.POST("/bot/exchanges/:exchangeId/update", controllers.UpdateApiKey)
 		}
 
 		// Other Secured Routes
