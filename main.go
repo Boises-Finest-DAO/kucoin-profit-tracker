@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/boises-finest-dao/investmentdao-backend/internal/database"
-	"github.com/boises-finest-dao/investmentdao-backend/internal/exchanges/kucoin"
 	"github.com/boises-finest-dao/investmentdao-backend/internal/models"
+	"gorm.io/gorm/clause"
 )
 
 func main() {
@@ -16,29 +17,37 @@ func main() {
 	database.Connect(AppConfig.GormConnection)
 	database.Migrate()
 
-	tradingBalance := models.TradingBalance{
-		FundID: 1,
-	}
+	// tradingBalance := models.TradingBalance{
+	// 	FundID: 1,
+	// }
 
-	result := database.Instance.Create(&tradingBalance)
-	if result.Error != nil {
-		log.Fatal(result.Error)
-	}
+	// result := database.Instance.Create(&tradingBalance)
+	// if result.Error != nil {
+	// 	log.Fatal(result.Error)
+	// }
 
-	ks := kucoin.ConfigureConnection(AppConfig.KuCoinApiKey, AppConfig.KuCoinApiSecret, AppConfig.KuCoinApiPass)
+	// ks := kucoin.ConfigureConnection(AppConfig.KuCoinApiKey, AppConfig.KuCoinApiSecret, AppConfig.KuCoinApiPass)
 
-	balance := ks.GetTradingBalances(tradingBalance.ID)
+	// balance := ks.GetTradingBalances(tradingBalance.ID)
 
-	result = database.Instance.Create(&balance)
-	if result.Error != nil {
-		log.Fatal(result.Error)
-	}
+	// result = database.Instance.Create(&balance)
+	// if result.Error != nil {
+	// 	log.Fatal(result.Error)
+	// }
 
-	tradingBalance.TotalTradingBalance += balance.TotalExchangeBalance
+	// tradingBalance.TotalTradingBalance += balance.TotalExchangeBalance
 
-	database.Instance.Save(&tradingBalance)
+	// database.Instance.Save(&tradingBalance)
 
 	// bot := services.GetBotByID(1)
 
 	// log.Println(services.EncryptString("123456789"))
+
+	var fund models.Fund
+	result := database.Instance.Preload("Bot.Exchanges").Preload(clause.Associations).First(&fund)
+	if result.Error != nil {
+		log.Fatal(result.Error)
+	}
+
+	fmt.Printf("fund.Bot.Name: %v\n", fund.Bot.Exchanges)
 }
