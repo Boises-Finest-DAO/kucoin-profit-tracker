@@ -31,6 +31,7 @@ func main() {
 	// Initialize Router
 	router := initRouter()
 	router.Run(fmt.Sprintf(":%v", AppConfig.ServerPort))
+
 }
 
 func initRouter() *gin.Engine {
@@ -98,7 +99,7 @@ func startBalanceTracker() {
 		if fundsResult.Error != nil {
 			log.Fatalln(fundsResult.Error.Error())
 		}
-	}, 15*time.Minute)
+	}, 5*time.Minute)
 
 	if err != nil {
 		log.Fatalln(err.Error())
