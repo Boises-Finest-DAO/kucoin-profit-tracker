@@ -38,3 +38,23 @@ func EncryptString(data string) []byte {
 
 	return result.CiphertextBlob
 }
+
+func DecryptString(data []byte) string {
+	// Initialize a session in us-west-2 that the SDK will use to load
+	// credentials from the shared credentials file ~/.aws/credentials.
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2")},
+	)
+
+	// Create KMS service client
+	svc := kms.New(sess)
+
+	// Decrypt the data
+	result, err := svc.Decrypt(&kms.DecryptInput{CiphertextBlob: data})
+
+	if err != nil {
+		fmt.Println("Got error decrypting data: ", err)
+	}
+
+	return string(result.Plaintext)
+}

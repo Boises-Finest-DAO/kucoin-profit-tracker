@@ -11,8 +11,10 @@ import (
 	"github.com/boises-finest-dao/investmentdao-backend/internal/exchanges/kucoin"
 	"github.com/boises-finest-dao/investmentdao-backend/internal/middlewares"
 	"github.com/boises-finest-dao/investmentdao-backend/internal/models"
+	"github.com/boises-finest-dao/investmentdao-backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/procyon-projects/chrono"
+	"gorm.io/gorm/clause"
 )
 
 func main() {
@@ -62,7 +64,7 @@ func startBalanceTracker() {
 
 	_, err := taskScheduler.ScheduleAtFixedRate(func(ctx context.Context) {
 		var funds *[]models.Fund
-		fundsResult := database.Instance.Find(&funds)
+		fundsResult := database.Instance.Preload("Bot.Exchanges").Preload(clause.Associations).Find(&funds)
 		for _, fund := range *funds {
 			tradingBalance := models.TradingBalance{
 				FundID: fund.ID,
@@ -73,16 +75,22 @@ func startBalanceTracker() {
 				log.Fatal(result.Error)
 			}
 
-			ks := kucoin.ConfigureConnection(AppConfig.KuCoinApiKey, AppConfig.KuCoinApiSecret, AppConfig.KuCoinApiPass)
+			for _, exchange := range fund.Bot.Exchanges {
+				KuCoinApiKey := services.DecryptString(exchange.ApiKey)
+				KuCoinApiSecret := services.DecryptString(exchange.APISecret)
+				KuCoinApiPass := services.DecryptString(exchange.APIPassPhrase)
 
-			balance := ks.GetTradingBalances(tradingBalance.ID)
+				ks := kucoin.ConfigureConnection(KuCoinApiKey, KuCoinApiSecret, KuCoinApiPass)
 
-			result = database.Instance.Create(&balance)
-			if result.Error != nil {
-				log.Fatal(result.Error)
+				balance := ks.GetTradingBalances(tradingBalance.ID)
+
+				result = database.Instance.Create(&balance)
+				if result.Error != nil {
+					log.Fatal(result.Error)
+				}
+
+				tradingBalance.TotalTradingBalance += balance.TotalExchangeBalance
 			}
-
-			tradingBalance.TotalTradingBalance += balance.TotalExchangeBalance
 
 			database.Instance.Save(&tradingBalance)
 		}
