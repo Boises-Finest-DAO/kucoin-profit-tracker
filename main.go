@@ -41,14 +41,31 @@ func initRouter() *gin.Engine {
 		// Get Token Route
 		api.POST("/token", controllers.GenerateToken)
 
-		// User Routers
-		user := api.Group("/user")
-		user.POST("/register", controllers.RegisterUser)
-		userFunds := user.Group("/funds/:fundId").Use(middlewares.Auth()).Use((middlewares.FundUser()))
+		// Admin Routes
+		admin := api.Group("/admin").Use(middlewares.Auth()).Use(middlewares.IsAdmin())
 		{
+			admin.POST("/register-user", controllers.RegisterUser)
+			admin.POST("/add-exchange", controllers.AddSupportedExchange)
+		}
 
-			userFunds.POST("/bot/exchanges/add", controllers.AddExchange)
-			userFunds.POST("/bot/exchanges/:exchangeId/update", controllers.UpdateApiKey)
+		//Funds Routes
+		fund1 := api.Group("/funds").Use(middlewares.Auth())
+		{
+			fund1.GET("/", controllers.Ping)
+			fund1.POST("/create", controllers.CreateFund)
+		}
+
+		fund2 := api.Group("/funds/:fundId").Use(middlewares.Auth()).Use((middlewares.FundUser()))
+		{
+			fund2.POST("/bot/exchanges/add", controllers.AddExchange)
+			fund2.POST("/bot/exchanges/:exchangeId/update", controllers.UpdateApiKey)
+			fund2.POST("/bot/attach", controllers.AttachBot).Use(middlewares.IsAdmin())
+		}
+
+		// User Routers
+		user := api.Group("/user").Use(middlewares.Auth())
+		{
+			user.GET("/", controllers.Ping)
 		}
 
 		// Other Secured Routes
@@ -65,7 +82,7 @@ func startBalanceTracker() {
 
 	_, err := taskScheduler.ScheduleAtFixedRate(func(ctx context.Context) {
 		var funds *[]models.Fund
-		fundsResult := database.Instance.Preload("Bot.Exchanges").Preload(clause.Associations).Find(&funds)
+		fundsResult := database.Instance.Preload(clause.Associations).Find(&funds)
 		for _, fund := range *funds {
 			tradingBalance := models.TradingBalance{
 				FundID: fund.ID,
@@ -76,7 +93,7 @@ func startBalanceTracker() {
 				log.Fatal(result.Error)
 			}
 
-			for _, exchange := range fund.Bot.Exchanges {
+			for _, exchange := range fund.Exchanges {
 				KuCoinApiKey := services.DecryptString(exchange.ApiKey)
 				KuCoinApiSecret := services.DecryptString(exchange.APISecret)
 				KuCoinApiPass := services.DecryptString(exchange.APIPassPhrase)

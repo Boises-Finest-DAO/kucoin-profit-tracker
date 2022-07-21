@@ -12,6 +12,7 @@ type User struct {
 	Email    string `json:"email" gorm:"unique"`
 	Password string `json:"password"`
 	Funds    []Fund `json:"funds" gorm:"many2many:user_funds"`
+	IsAdmin  bool   `json:"is_admin" gorm:"default:false"`
 }
 
 func (user *User) HashPassword(password string) error {

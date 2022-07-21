@@ -23,8 +23,8 @@ func Connect(connectionString string) {
 func Migrate() {
 	Instance.AutoMigrate(
 		&models.Fund{},
-		&models.Bot{},
 		&models.Exchange{},
+		&models.Exchangelist{},
 		&models.TradingBalance{},
 		&models.ExchangeBalance{},
 		&models.ExchangeCurrencyBalance{},
