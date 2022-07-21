@@ -1,12 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/boises-finest-dao/investmentdao-backend/internal/controllers"
 	"github.com/boises-finest-dao/investmentdao-backend/internal/database"
+	"github.com/boises-finest-dao/investmentdao-backend/internal/exchanges/kucoin"
 	"github.com/boises-finest-dao/investmentdao-backend/internal/middlewares"
+	"github.com/boises-finest-dao/investmentdao-backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/procyon-projects/chrono"
 )
 
 func main() {
@@ -17,43 +23,12 @@ func main() {
 	database.Connect(AppConfig.GormConnection)
 	database.Migrate()
 
+	// Start Balance Tacker
+	startBalanceTracker()
+
 	// Initialize Router
 	router := initRouter()
 	router.Run(fmt.Sprintf(":%v", AppConfig.ServerPort))
-
-	// tradingBalance := models.TradingBalance{
-	// 	FundID: 1,
-	// }
-
-	// result := database.Instance.Create(&tradingBalance)
-	// if result.Error != nil {
-	// 	log.Fatal(result.Error)
-	// }
-
-	// ks := kucoin.ConfigureConnection(AppConfig.KuCoinApiKey, AppConfig.KuCoinApiSecret, AppConfig.KuCoinApiPass)
-
-	// balance := ks.GetTradingBalances(tradingBalance.ID)
-
-	// result = database.Instance.Create(&balance)
-	// if result.Error != nil {
-	// 	log.Fatal(result.Error)
-	// }
-
-	// tradingBalance.TotalTradingBalance += balance.TotalExchangeBalance
-
-	// database.Instance.Save(&tradingBalance)
-
-	// bot := services.GetBotByID(1)
-
-	// log.Println(services.EncryptString("123456789"))
-
-	// var fund models.Fund
-	// result := database.Instance.Preload("Bot.Exchanges").Preload(clause.Associations).First(&fund)
-	// if result.Error != nil {
-	// 	log.Fatal(result.Error)
-	// }
-
-	// fmt.Printf("fund.Bot.Name: %v\n", fund.Bot.Exchanges)
 }
 
 func initRouter() *gin.Engine {
@@ -80,4 +55,46 @@ func initRouter() *gin.Engine {
 		}
 	}
 	return router
+}
+
+func startBalanceTracker() {
+	taskScheduler := chrono.NewDefaultTaskScheduler()
+
+	_, err := taskScheduler.ScheduleAtFixedRate(func(ctx context.Context) {
+		var funds *[]models.Fund
+		fundsResult := database.Instance.Find(&funds)
+		for _, fund := range *funds {
+			tradingBalance := models.TradingBalance{
+				FundID: fund.ID,
+			}
+
+			result := database.Instance.Create(&tradingBalance)
+			if result.Error != nil {
+				log.Fatal(result.Error)
+			}
+
+			ks := kucoin.ConfigureConnection(AppConfig.KuCoinApiKey, AppConfig.KuCoinApiSecret, AppConfig.KuCoinApiPass)
+
+			balance := ks.GetTradingBalances(tradingBalance.ID)
+
+			result = database.Instance.Create(&balance)
+			if result.Error != nil {
+				log.Fatal(result.Error)
+			}
+
+			tradingBalance.TotalTradingBalance += balance.TotalExchangeBalance
+
+			database.Instance.Save(&tradingBalance)
+		}
+
+		if fundsResult.Error != nil {
+			log.Fatalln(fundsResult.Error.Error())
+		}
+	}, 15*time.Minute)
+
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	log.Print("Balance Tracker has been scheduled successfully.")
 }
