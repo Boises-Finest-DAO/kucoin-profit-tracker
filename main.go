@@ -13,6 +13,10 @@ import (
 	"github.com/boises-finest-dao/investmentdao-backend/internal/models"
 	"github.com/boises-finest-dao/investmentdao-backend/internal/services"
 	"github.com/gin-gonic/gin"
+	ginserver "github.com/go-oauth2/gin-server"
+	"github.com/go-oauth2/oauth2/v4/manage"
+	"github.com/go-oauth2/oauth2/v4/server"
+	"github.com/go-oauth2/oauth2/v4/store"
 	"github.com/procyon-projects/chrono"
 	"gorm.io/gorm/clause"
 )
@@ -35,6 +39,20 @@ func main() {
 }
 
 func initRouter() *gin.Engine {
+	manager := manage.NewDefaultManager()
+
+	// token store
+	manager.MustTokenStorage(store.NewFileTokenStore("data.db"))
+
+	// JWT Auth
+	manager.MapAccessGenerate()
+
+	// Initialize the oauth2 service
+	ginserver.InitServer(manager)
+	ginserver.SetPasswordAuthorizationHandler()
+	ginserver.SetAllowGetAccessRequest(true)
+	ginserver.SetClientInfoHandler(server.ClientFormHandler)
+
 	router := gin.Default()
 	api := router.Group("/api")
 	{
