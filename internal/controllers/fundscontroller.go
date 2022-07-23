@@ -66,18 +66,20 @@ func AttachBot(context *gin.Context) {
 }
 
 func AddExchange(context *gin.Context) {
-	var exchange ExchangeAPI
+	var body ExchangeAPI
 	fundId := context.Param("fundId")
 	fund_id, _ := strconv.ParseUint(fundId, 10, 8)
 
-	if context.ShouldBind(&exchange) == nil {
-		result := database.Instance.Create(&models.Exchange{
-			FundID:         uint(fund_id),
-			ExchangelistID: exchange.ExchangeType,
-			ApiKey:         services.EncryptString(exchange.ApiKey),
-			APISecret:      services.EncryptString(exchange.ApiSecret),
-			APIPassPhrase:  services.EncryptString(exchange.ApiPass),
-		})
+	if context.ShouldBind(&body) == nil {
+		var exchange *models.Exchange
+
+		exchange.FundID = uint(fund_id)
+		exchange.ExchangelistID = body.ExchangeType
+		exchange.ApiKey = services.EncryptString(body.ApiKey)
+		exchange.APISecret = services.EncryptString(body.ApiSecret)
+		exchange.APIPassPhrase = services.EncryptString(body.ApiPass)
+
+		result := database.Instance.Create(&exchange)
 		if result.Error != nil {
 			context.Status(http.StatusBadRequest)
 			return
