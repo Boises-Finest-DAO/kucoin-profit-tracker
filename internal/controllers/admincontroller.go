@@ -5,9 +5,18 @@ import (
 
 	"github.com/boises-finest-dao/investmentdao-backend/internal/database"
 	"github.com/boises-finest-dao/investmentdao-backend/internal/models"
+	"github.com/boises-finest-dao/investmentdao-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
+
+type MasterExchange struct {
+	ExchangeType  uint   `json:"exchange_type"`
+	Email         string `json:"email"`
+	ApiKey        string `json:"api_key"`
+	APISecret     string `json:"api_secret"`
+	APIPassPhrase string `json:"api_pass"`
+}
 
 func RegisterUser(context *gin.Context) {
 	var user models.User
@@ -51,4 +60,29 @@ func AddSupportedExchange(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, exchange)
+}
+
+func AddMasterExchange(context *gin.Context) {
+	var body MasterExchange
+
+	if context.ShouldBind(&body) == nil {
+		var masterExchange *models.Masterexchange
+
+		masterExchange.Email = body.Email
+		masterExchange.ExchangelistID = body.ExchangeType
+		masterExchange.ApiKey = services.EncryptString(body.ApiKey)
+		masterExchange.APISecret = services.EncryptString(body.APISecret)
+		masterExchange.APIPassPhrase = services.EncryptString(body.APIPassPhrase)
+
+		result := database.Instance.Create(&masterExchange)
+		if result.Error != nil {
+			context.Status(http.StatusBadRequest)
+			return
+		}
+
+		context.JSON(http.StatusOK, masterExchange)
+	} else {
+		context.Status(http.StatusBadRequest)
+		return
+	}
 }

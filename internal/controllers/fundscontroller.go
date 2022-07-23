@@ -11,10 +11,11 @@ import (
 )
 
 type ExchangeAPI struct {
-	ExchangeType uint   `json:"exchange_type"`
-	ApiKey       string `json:"api_key"`
-	ApiSecret    string `json:"api_secret"`
-	ApiPass      string `json:"api_pass"`
+	MasterExchange uint   `json:"master_exchange"`
+	ExchangeType   uint   `json:"exchange_type"`
+	ApiKey         string `json:"api_key"`
+	ApiSecret      string `json:"api_secret"`
+	ApiPass        string `json:"api_pass"`
 }
 
 type BotContainer struct {
@@ -73,6 +74,7 @@ func AddExchange(context *gin.Context) {
 	if context.ShouldBind(&body) == nil {
 		var exchange *models.Exchange
 
+		exchange.MasterexchangeID = body.MasterExchange
 		exchange.FundID = uint(fund_id)
 		exchange.ExchangelistID = body.ExchangeType
 		exchange.ApiKey = services.EncryptString(body.ApiKey)
